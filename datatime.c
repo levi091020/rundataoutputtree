@@ -6,10 +6,17 @@ void datatime()
     std::vector<Double_t> *SignalPosition = nullptr;
     std::vector<Double_t> *SignalPlane = nullptr;
     std::vector<Double_t> *SignalTime = nullptr;
+    std::vector<Double_t> *SignalPositionY = nullptr;
+    std::vector<Double_t> *SignalPositionZ = nullptr;
 
     tIn->SetBranchAddress("SignalPosition", &SignalPosition);
     tIn->SetBranchAddress("SignalPlane", &SignalPlane);
     tIn->SetBranchAddress("SignalTime", &SignalTime);
+    tIn->SetBranchAddress("SignalPositionY", &SignalPositionY);
+    tIn->SetBranchAddress("SignalPositionZ", &SignalPositionZ);
+
+    bool hasYCoord = (SignalPositionY != nullptr);
+    bool hasZCoord = (SignalPositionZ != nullptr);
 
     // Khởi tạo histogram
     TH1F *h_Top = new TH1F("h_Top", "Top Signal Position", 100, 0, 100);
@@ -24,6 +31,14 @@ void datatime()
     std::vector<Double_t> planeB(nEntries, 0.0);
     std::vector<Double_t> planeU(nEntries, 0.0);
     std::vector<Double_t> planeD(nEntries, 0.0);
+    std::vector<Double_t> planeYT(hasYCoord ? nEntries : 0, 0.0);
+    std::vector<Double_t> planeYB(hasYCoord ? nEntries : 0, 0.0);
+    std::vector<Double_t> planeYU(hasYCoord ? nEntries : 0, 0.0);
+    std::vector<Double_t> planeYD(hasYCoord ? nEntries : 0, 0.0);
+    std::vector<Double_t> planeZT(hasZCoord ? nEntries : 0, 0.0);
+    std::vector<Double_t> planeZB(hasZCoord ? nEntries : 0, 0.0);
+    std::vector<Double_t> planeZU(hasZCoord ? nEntries : 0, 0.0);
+    std::vector<Double_t> planeZD(hasZCoord ? nEntries : 0, 0.0);
     std::vector<Double_t> timeT(nEntries, 0.0);
     std::vector<Double_t> timeB(nEntries, 0.0);
     std::vector<Double_t> timeU(nEntries, 0.0);
@@ -33,30 +48,50 @@ void datatime()
     {
         tIn->GetEntry(i);
 
-        // Tìm tọa độ x và thời gian của SignalPlane top, bot, up, và down
+        // Tìm tọa độ x, y, z và thời gian của SignalPlane top, bot, up, và down
         for (size_t j = 0; j < SignalPosition->size(); j++)
         {
             if ((*SignalPlane)[j] == 3)
             {
                 planeT[i] = (*SignalPosition)[j];
+                if (hasYCoord && hasZCoord)
+                {
+                    planeYT[i] = (*SignalPositionY)[j];
+                    planeZT[i] = (*SignalPositionZ)[j];
+                }
                 timeT[i] = (*SignalTime)[j];
                 h_Top->Fill(planeT[i]);
             }
             else if ((*SignalPlane)[j] == 2)
             {
                 planeB[i] = (*SignalPosition)[j];
+                if (hasYCoord && hasZCoord)
+                {
+                    planeYB[i] = (*SignalPositionY)[j];
+                    planeZB[i] = (*SignalPositionZ)[j];
+                }
                 timeB[i] = (*SignalTime)[j];
                 h_Bot->Fill(planeB[i]);
             }
             else if ((*SignalPlane)[j] == 4)
             {
                 planeU[i] = (*SignalPosition)[j];
+                if (hasYCoord && hasZCoord)
+                {
+                    planeYU[i] = (*SignalPositionY)[j];
+                    planeZU[i] = (*SignalPositionZ)[j];
+                }
                 timeU[i] = (*SignalTime)[j];
                 h_Up->Fill(planeU[i]);
             }
             else if ((*SignalPlane)[j] == 5)
             {
                 planeD[i] = (*SignalPosition)[j];
+                if (hasYCoord && hasZCoord)
+                {
+                    planeYD[i] = (*SignalPositionY)[j];
+                    planeZD[i] = (*SignalPositionZ)[j];
+                }
                 timeD[i] = (*SignalTime)[j];
                 h_Down->Fill(planeD[i]);
             }
@@ -72,30 +107,45 @@ void datatime()
     // In tọa độ và thời gian của SignalPlane top
     outfile << "Top Plane Coordinates and Time:" << std::endl;
     for (int i = 0; i < numEvents; i++) {
-        outfile << "Event " << i << ": x = " << planeT[i] << ", t = " << timeT[i] << std::endl;
+        if (hasYCoord && hasZCoord) {
+            outfile << "Event " << i << ": x = " << planeT[i] << ", y = " << planeYT[i] << ", z = " << planeZT[i] << ", t = " << timeT[i] << std::endl;
+        } else {
+            outfile << "Event " << i << ": x = " << planeT[i] << ", t = " << timeT[i] << std::endl;
+        }
     }
     outfile << std::endl;
 
     // In tọa độ và thời gian của SignalPlane bot
     outfile << "Bottom Plane Coordinates and Time:" << std::endl;
     for (int i = 0; i < numEvents; i++) {
-        outfile << "Event " << i << ": x = " << planeB[i] << ", t = " << timeB[i] << std::endl;
+        if (hasYCoord && hasZCoord) {
+            outfile << "Event " << i << ": x = " << planeB[i] << ", y = " << planeYB[i] << ", z = " << planeZB[i] << ", t = " << timeB[i] << std::endl;
+        } else {
+            outfile << "Event " << i << ": x = " << planeB[i] << ", t = " << timeB[i] << std::endl;
+        }
     }
     outfile << std::endl;
 
     // In tọa độ và thời gian của SignalPlane up
     outfile << "Up Plane Coordinates and Time:" << std::endl;
-    for (int i = 0; i < numEvents; i++) {
-        outfile << "Event " << i << ": x = " << planeU[i] << ", t = " << timeU[i] << std::endl;
-    }
-    outfile << std::endl;
-
-    // In tọa độ và thời gian của SignalPlane down
-    outfile << "Down Plane Coordinates and Time:" << std::endl;
-    for (int i = 0; i < numEvents; i++) {
+for (int i = 0; i < numEvents; i++) {
+if (hasYCoord && hasZCoord) {
+outfile << "Event " << i << ": x = " << planeU[i] << ", y = " << planeYU[i] << ", z = " << planeZU[i] << ", t = " << timeU[i] << std::endl;
+} else {
+outfile << "Event " << i << ": x = " << planeU[i] << ", t = " << timeU[i] << std::endl;
+}
+}
+outfile << std::endl;
+// In tọa độ và thời gian của SignalPlane down
+outfile << "Down Plane Coordinates and Time:" << std::endl;
+for (int i = 0; i < numEvents; i++) {
+    if (hasYCoord && hasZCoord) {
+        outfile << "Event " << i << ": x = " << planeD[i] << ", y = " << planeYD[i] << ", z = " << planeZD[i] << ", t = " << timeD[i] << std::endl;
+    } else {
         outfile << "Event " << i << ": x = " << planeD[i] << ", t = " << timeD[i] << std::endl;
     }
+}
 
-    // Đóng file
-    outfile.close();
+// Đóng file
+outfile.close();
 }
